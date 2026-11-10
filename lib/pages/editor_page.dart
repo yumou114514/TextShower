@@ -276,13 +276,13 @@ class _EditorPageState extends State<EditorPage> {
       final result = await service.exportText(
         suggestedName: '$safeTitle.${_isTst ? 'tst' : 'txt'}',
         contents: contents,
-        label: _isTst ? '小测文稿' : '纯文本',
+        label: _isTst ? 'tst文稿' : '纯文本',
         extensions: <String>[_isTst ? 'tst' : 'txt'],
         mimeType: _isTst ? 'application/octet-stream' : 'text/plain',
       );
       if (result.cancelled) return;
       if (result.shared) {
-        _snack('已打开系统分享');
+        _snack('已打开分享');
       } else if (result.path != null) {
         _snack('已导出到 ${result.path}');
       }
@@ -467,10 +467,6 @@ class _EditorPageState extends State<EditorPage> {
               const SizedBox(height: 2),
               const Align(
                 alignment: Alignment.centerLeft,
-                child: Text(
-                  '双指缩放或按住 Ctrl 滚动鼠标滚轮调整字号',
-                  style: TextStyle(fontSize: 11, color: Colors.black45),
-                ),
               ),
             ],
           ),

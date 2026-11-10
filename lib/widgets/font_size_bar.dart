@@ -49,7 +49,7 @@ class FontSizeBar extends StatelessWidget {
           ),
         ),
         FilterChip(
-          label: const Text('自动'),
+          label: const Text('自动调整'),
           selected: auto,
           showCheckmark: false,
           onSelected: (_) => onAuto(),

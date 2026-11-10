@@ -116,7 +116,7 @@ class _LibraryPageState extends State<LibraryPage> {
     final now = DateTime.now();
     final doc = TextDoc(
       id: newDocId(),
-      title: '未命名小测',
+      title: '文稿',
       kind: DocKind.tst,
       body: '',
       config: DocConfig.tstDefault(),
@@ -270,7 +270,7 @@ class _EmptyState extends StatelessWidget {
           Text('还没有文稿', style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),
           Text(
-            '新建小测文稿，或打开任意文本文件',
+            '新建文稿，或打开任意文本文件',
             style: theme.textTheme.bodyMedium
                 ?.copyWith(color: theme.colorScheme.outline),
           ),
