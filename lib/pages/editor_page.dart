@@ -18,7 +18,7 @@ class EditorResult {
   final bool deleted;
 }
 
-enum _EditorAction { save, rename, duplicate, export, delete }
+enum _EditorAction { save, rename, duplicate, export, quit, delete }
 
 class EditorPage extends StatefulWidget {
   const EditorPage({
@@ -218,6 +218,8 @@ class _EditorPageState extends State<EditorPage> {
         await _duplicate();
       case _EditorAction.export:
         await _export();
+      case _EditorAction.quit:
+        await _handleExit();
       case _EditorAction.delete:
         await _delete();
     }
@@ -368,6 +370,10 @@ class _EditorPageState extends State<EditorPage> {
               ),
               const PopupMenuDivider(),
               const PopupMenuItem(
+                value: _EditorAction.quit,
+                child: Text('退出'),
+              ),
+              const PopupMenuItem(
                 value: _EditorAction.delete,
                 child: Text('删除文档'),
               ),
@@ -467,6 +473,10 @@ class _EditorPageState extends State<EditorPage> {
               const SizedBox(height: 2),
               const Align(
                 alignment: Alignment.centerLeft,
+                child: Text(
+                  '双指缩放或按住 Ctrl 滚动鼠标滚轮调整字号',
+                  style: TextStyle(fontSize: 11, color: Colors.black45),
+                ),
               ),
             ],
           ),
