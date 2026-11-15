@@ -9,6 +9,7 @@ class FontSizeBar extends StatelessWidget {
     required this.onAuto,
     this.min = 8,
     this.max = 200,
+    this.step = 10,
   });
 
   final double value;
@@ -17,6 +18,7 @@ class FontSizeBar extends StatelessWidget {
   final VoidCallback onAuto;
   final double min;
   final double max;
+  final double step;
 
   @override
   Widget build(BuildContext context) {
@@ -26,21 +28,19 @@ class FontSizeBar extends StatelessWidget {
       children: [
         Icon(Icons.format_size, size: 20, color: scheme.onSurfaceVariant),
         const SizedBox(width: 4),
-        Expanded(
-          child: Slider(
-            value: clamped,
-            min: min,
-            max: max,
-            divisions: ((max - min)).round(),
-            label: '${clamped.round()}',
-            activeColor: scheme.primary,
-            onChanged: onChanged,
-          ),
+        IconButton(
+          tooltip: '减小字号',
+          visualDensity: VisualDensity.compact,
+          onPressed: clamped <= min
+              ? null
+              : () => onChanged((clamped - step).clamp(min, max)),
+          icon: const Icon(Icons.remove),
         ),
         SizedBox(
           width: 40,
           child: Text(
             '${clamped.round()}',
+            key: const ValueKey<String>('font-size-value'),
             textAlign: TextAlign.center,
             style: TextStyle(
               color: scheme.onSurface,
@@ -48,8 +48,17 @@ class FontSizeBar extends StatelessWidget {
             ),
           ),
         ),
+        IconButton(
+          tooltip: '增大字号',
+          visualDensity: VisualDensity.compact,
+          onPressed: clamped >= max
+              ? null
+              : () => onChanged((clamped + step).clamp(min, max)),
+          icon: const Icon(Icons.add),
+        ),
+        const Spacer(),
         FilterChip(
-          label: const Text('自动调整'),
+          label: const Text('自动'),
           selected: auto,
           showCheckmark: false,
           onSelected: (_) => onAuto(),

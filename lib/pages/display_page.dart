@@ -153,6 +153,7 @@ class _DisplayPageState extends State<DisplayPage> {
         children: [
           Expanded(
             child: LayoutBuilder(
+              key: const ValueKey<String>('content-area'),
               builder: (context, constraints) => _buildContent(constraints),
             ),
           ),
@@ -198,6 +199,35 @@ class _DisplayPageState extends State<DisplayPage> {
     if (_pref.auto && _displayFontSize != fontSize) {
       _displayFontSize = fontSize;
       _scheduleToolbarRefresh();
+    }
+
+    final contentHeight = blocks.fold<double>(
+      0,
+      (sum, block) => sum + _measurer.measureBlock(block, fontSize, width),
+    );
+    if (height > 0 && contentHeight <= height) {
+      return Padding(
+        key: const ValueKey<String>('single-column'),
+        padding: const EdgeInsets.symmetric(
+          horizontal: _hPad,
+          vertical: _vPad,
+        ),
+        child: Center(
+          child: Column(
+            key: const ValueKey<String>('centered-content'),
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (final block in blocks)
+                RichBlockText(
+                  block: block,
+                  fontSize: fontSize,
+                  color: Colors.black,
+                ),
+            ],
+          ),
+        ),
+      );
     }
 
     return ListView.builder(

@@ -11,16 +11,15 @@ TextDoc _tstDoc({
 }) {
   return TextDoc(
     id: 'doc1',
-    title: '单词小测',
+    title: '文档',
     kind: DocKind.tst,
     body: body,
     config: DocConfig(
       columns: columns,
       groups: const <HideGroup>[
-        HideGroup(name: '英文'),
-        HideGroup(name: '音标'),
+        HideGroup(name: 'hide'),
       ],
-      defaultGroup: '英文',
+      defaultGroup: 'hide',
     ),
   );
 }
@@ -68,7 +67,7 @@ void main() {
     }
   });
 
-  testWidgets('固定白底黑字且不提供背景或隐藏控制', (tester) async {
+  testWidgets('白底黑字', (tester) async {
     await _pumpDisplay(tester, _tstDoc());
 
     final scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
@@ -101,7 +100,20 @@ void main() {
     expect(find.text('{hide:英文}'), findsNothing);
   });
 
-  testWidgets('拖动字号滑块覆盖自动字号，自动按钮复位', (tester) async {
+  testWidgets('短文字在内容区域上下左右居中', (tester) async {
+    await _pumpDisplay(tester, _tstDoc(body: 'hi'));
+
+    final area = tester.getCenter(
+      find.byKey(const ValueKey<String>('content-area')),
+    );
+    final content = tester.getCenter(
+      find.byKey(const ValueKey<String>('centered-content')),
+    );
+    expect(content.dx, moreOrLessEquals(area.dx, epsilon: 0.5));
+    expect(content.dy, moreOrLessEquals(area.dy, epsilon: 0.5));
+  });
+
+  testWidgets('加减按钮调整字号，自动按钮复位', (tester) async {
     await _pumpDisplay(tester, _tstDoc());
 
     FilterChip chip = tester.widget(
@@ -109,13 +121,22 @@ void main() {
     );
     expect(chip.selected, isTrue);
 
-    final slider = tester.widget<Slider>(find.byType(Slider));
-    slider.onChanged!(48);
+    String sizeText() => tester
+        .widget<Text>(find.byKey(const ValueKey<String>('font-size-value')))
+        .data!;
+    final autoSize = int.parse(sizeText());
+
+    await tester.tap(find.byTooltip('减小字号'));
     await tester.pumpAndSettle();
 
-    expect(find.text('48'), findsOneWidget);
     chip = tester.widget(find.widgetWithText(FilterChip, '自动'));
     expect(chip.selected, isFalse);
+    final smaller = int.parse(sizeText());
+    expect(smaller, lessThan(autoSize));
+
+    await tester.tap(find.byTooltip('增大字号'));
+    await tester.pumpAndSettle();
+    expect(int.parse(sizeText()), greaterThan(smaller));
 
     await tester.tap(find.text('自动'));
     await tester.pumpAndSettle();
