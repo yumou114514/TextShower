@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -10,9 +11,10 @@ import 'package:text_shower/models/text_doc.dart';
 import 'package:text_shower/pages/library_page.dart';
 
 class _FakePicker implements FilePicker {
-  _FakePicker({this.next});
+  _FakePicker({this.next, this.saveTo});
 
   PickedFile? next;
+  String? saveTo;
 
   @override
   Future<PickedFile?> open({
@@ -29,7 +31,7 @@ class _FakePicker implements FilePicker {
     required String suggestedName,
     String? mimeType,
   }) async =>
-      null;
+      saveTo;
 }
 
 TextDoc _doc(String title, {DocKind kind = DocKind.tst}) {
@@ -43,6 +45,16 @@ TextDoc _doc(String title, {DocKind kind = DocKind.tst}) {
 }
 
 void main() {
+  Future<void> waitFor(WidgetTester tester, bool Function() condition) async {
+    await tester.runAsync(() async {
+      for (var i = 0; i < 200; i++) {
+        if (condition()) return;
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+      }
+    });
+    await tester.pump();
+  }
+
   Future<void> pumpLibrary(
     WidgetTester tester,
     DocRepository repository,
@@ -144,5 +156,37 @@ void main() {
 
     expect(await repository.loadAll(), isEmpty);
     expect(find.text('还没有文稿'), findsOneWidget);
+  });
+
+  testWidgets('列表项菜单可导出文稿', (tester) async {
+    final directory = Directory.systemTemp.createTempSync('text_shower_export');
+    addTearDown(() {
+      try {
+        directory.deleteSync(recursive: true);
+      } catch (_) {
+        // Windows 可能仍短暂占用刚写完的文件。
+      }
+    });
+    final target = File('${directory.path}${Platform.pathSeparator}导出.tst');
+    final repository = MemoryDocRepository(<TextDoc>[_doc('导出测试')]);
+    await pumpLibrary(
+      tester,
+      repository,
+      _FakePicker(saveTo: target.path),
+    );
+
+    await tester.tap(find.byTooltip('更多操作'));
+    await tester.pumpAndSettle();
+    expect(find.text('导出'), findsOneWidget);
+
+    await tester.tap(find.text('导出'));
+    await waitFor(
+      tester,
+      () => target.existsSync() && target.lengthSync() > 0,
+    );
+
+    expect(target.existsSync(), isTrue);
+    final exported = target.readAsStringSync();
+    expect(exported, contains('第一行内容'));
   });
 }

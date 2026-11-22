@@ -10,6 +10,7 @@ class DocTile extends StatelessWidget {
     required this.preview,
     required this.onTap,
     required this.onRename,
+    required this.onExport,
     required this.onDelete,
   });
 
@@ -17,6 +18,7 @@ class DocTile extends StatelessWidget {
   final String preview;
   final VoidCallback onTap;
   final VoidCallback onRename;
+  final VoidCallback onExport;
   final VoidCallback onDelete;
 
   @override
@@ -75,6 +77,7 @@ class DocTile extends StatelessWidget {
         tooltip: '更多操作',
         onSelected: (value) {
           if (value == 'rename') onRename();
+          if (value == 'export') onExport();
           if (value == 'delete') onDelete();
         },
         itemBuilder: (context) => const [
@@ -85,6 +88,15 @@ class DocTile extends StatelessWidget {
               contentPadding: EdgeInsets.zero,
               leading: Icon(Icons.drive_file_rename_outline),
               title: Text('重命名'),
+            ),
+          ),
+          PopupMenuItem<String>(
+            value: 'export',
+            child: ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.ios_share),
+              title: Text('导出'),
             ),
           ),
           PopupMenuItem<String>(

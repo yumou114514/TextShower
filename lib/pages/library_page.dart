@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/doc_repository.dart';
+import '../data/export_service.dart';
 import '../data/file_pick_service.dart';
 import '../data/tst_codec.dart';
 import '../data/tst_loader.dart';
@@ -167,6 +168,40 @@ class _LibraryPageState extends State<LibraryPage> {
     await _load();
   }
 
+  Future<void> _exportDoc(TextDoc doc) async {
+    final extension = doc.isTst ? 'tst' : 'txt';
+    final contents = doc.isTst
+        ? TstCodec.serialize(
+            title: doc.title,
+            config: doc.config,
+            body: doc.body,
+          )
+        : doc.body;
+    final service = ExportService(picker: _picker);
+    try {
+      final result = await service.exportText(
+        suggestedName: '${_safeFileName(doc.title)}.$extension',
+        contents: contents,
+        label: doc.isTst ? 'tst文稿' : '纯文本',
+        extensions: <String>[extension],
+        mimeType: doc.isTst ? 'application/octet-stream' : 'text/plain',
+      );
+      if (!mounted || result.cancelled) return;
+      if (result.shared) {
+        _snack('已打开分享');
+      } else if (result.path != null) {
+        _snack('已导出到 ${result.path}');
+      }
+    } catch (error) {
+      _snack('导出失败：$error');
+    }
+  }
+
+  static String _safeFileName(String title) {
+    final cleaned = title.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_').trim();
+    return cleaned.isEmpty ? '未命名' : cleaned;
+  }
+
   Future<void> _deleteDoc(TextDoc doc) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -241,6 +276,7 @@ class _LibraryPageState extends State<LibraryPage> {
                       preview: _previews[doc.id] ?? '',
                       onTap: () => _openViewer(doc),
                       onRename: () => _renameDoc(doc),
+                      onExport: () => _exportDoc(doc),
                       onDelete: () => _deleteDoc(doc),
                     );
                   },
