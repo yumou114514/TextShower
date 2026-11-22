@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:text_shower/data/doc_repository.dart';
@@ -245,6 +246,43 @@ void main() {
 
     final controller = tester.widget<ListView>(listFinder).controller;
     expect(controller!.offset, greaterThan(0));
+  });
+
+  testWidgets('鼠标拖动也能滚动内容', (tester) async {
+    await _pumpDisplay(
+      tester,
+      _tstDoc(
+        body: List<String>.generate(
+          20,
+          (index) => 'line ${index + 1} some english words here',
+        ).join('\n'),
+      ),
+    );
+
+    await tester.tap(
+      find.byKey(const ValueKey<String>('font-size-quick-adjust')),
+    );
+    await tester.pumpAndSettle();
+    final slider = tester.widget<Slider>(
+      find.byKey(const ValueKey<String>('quick-font-size-slider')),
+    );
+    slider.onChanged!(200);
+    await tester.pumpAndSettle();
+    await tester.tapAt(const Offset(400, 100));
+    await tester.pumpAndSettle();
+
+    final listFinder = find.byKey(const ValueKey<String>('single-column'));
+    final controller = tester.widget<ListView>(listFinder).controller!;
+    final start = tester.getCenter(listFinder);
+
+    final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await gesture.down(start);
+    await gesture.moveBy(const Offset(0, -120));
+    await gesture.moveBy(const Offset(0, -180));
+    await gesture.up();
+    await tester.pumpAndSettle();
+
+    expect(controller.offset, greaterThan(0));
   });
 
   testWidgets('空白文稿显示占位提示', (tester) async {

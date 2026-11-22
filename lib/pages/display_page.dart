@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -12,6 +13,21 @@ import '../services/text_measurer.dart';
 import '../widgets/font_size_bar.dart';
 import '../widgets/rich_blocks.dart';
 import 'editor_page.dart';
+
+class _DisplayScrollBehavior extends MaterialScrollBehavior {
+  const _DisplayScrollBehavior();
+
+  // Windows 触屏输入可能被上报为鼠标，允许鼠标拖动才能保证手指滑动生效。
+  @override
+  Set<PointerDeviceKind> get dragDevices => <PointerDeviceKind>{
+        PointerDeviceKind.touch,
+        PointerDeviceKind.stylus,
+        PointerDeviceKind.invertedStylus,
+        PointerDeviceKind.trackpad,
+        PointerDeviceKind.unknown,
+        PointerDeviceKind.mouse,
+      };
+}
 
 class DisplayPage extends StatefulWidget {
   const DisplayPage({
@@ -283,18 +299,25 @@ class _DisplayPageState extends State<DisplayPage> {
       );
     }
 
-    return ListView.builder(
-      key: const ValueKey<String>('single-column'),
-      controller: _scrollController,
-      physics: _scrollFrozen
-          ? const NeverScrollableScrollPhysics()
-          : const ClampingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: _hPad, vertical: _vPad),
-      itemCount: blocks.length,
-      itemBuilder: (context, index) => RichBlockText(
-        block: blocks[index],
-        fontSize: fontSize,
-        color: Colors.black,
+    return ScrollConfiguration(
+      behavior: const _DisplayScrollBehavior(),
+      child: Scrollbar(
+        controller: _scrollController,
+        child: ListView.builder(
+          key: const ValueKey<String>('single-column'),
+          controller: _scrollController,
+          physics: _scrollFrozen
+              ? const NeverScrollableScrollPhysics()
+              : const ClampingScrollPhysics(),
+          padding:
+              const EdgeInsets.symmetric(horizontal: _hPad, vertical: _vPad),
+          itemCount: blocks.length,
+          itemBuilder: (context, index) => RichBlockText(
+            block: blocks[index],
+            fontSize: fontSize,
+            color: Colors.black,
+          ),
+        ),
       ),
     );
   }
