@@ -145,6 +145,108 @@ void main() {
     expect(chip.selected, isTrue);
   });
 
+  testWidgets('点击字号数值打开滑块快速调整', (tester) async {
+    await _pumpDisplay(tester, _tstDoc());
+
+    await tester.tap(
+      find.byKey(const ValueKey<String>('font-size-quick-adjust')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey<String>('quick-font-size-slider')),
+      findsOneWidget,
+    );
+
+    final slider = tester.widget<Slider>(
+      find.byKey(const ValueKey<String>('quick-font-size-slider')),
+    );
+    slider.onChanged!(60);
+    await tester.pumpAndSettle();
+
+    final sizeText = tester
+        .widget<Text>(find.byKey(const ValueKey<String>('font-size-value')))
+        .data;
+    expect(sizeText, '60');
+    final chip = tester.widget<FilterChip>(
+      find.widgetWithText(FilterChip, '自动'),
+    );
+    expect(chip.selected, isFalse);
+  });
+
+  testWidgets('双指捏合调整字号并切换为手动', (tester) async {
+    await _pumpDisplay(
+      tester,
+      _tstDoc(
+        body: List<String>.generate(
+          6,
+          (index) => 'line ${index + 1} some english words here',
+        ).join('\n'),
+      ),
+    );
+
+    String sizeText() => tester
+        .widget<Text>(find.byKey(const ValueKey<String>('font-size-value')))
+        .data!;
+    final before = int.parse(sizeText());
+
+    final first = await tester.startGesture(
+      const Offset(300, 300),
+      pointer: 1,
+    );
+    final second = await tester.startGesture(
+      const Offset(340, 300),
+      pointer: 2,
+    );
+    await tester.pump();
+    await first.moveTo(const Offset(260, 300));
+    await second.moveTo(const Offset(380, 300));
+    await tester.pump();
+
+    expect(int.parse(sizeText()), greaterThan(before));
+    final chip = tester.widget<FilterChip>(
+      find.widgetWithText(FilterChip, '自动'),
+    );
+    expect(chip.selected, isFalse);
+
+    await first.up();
+    await second.up();
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('超出一页时手指拖动可滚动', (tester) async {
+    await _pumpDisplay(
+      tester,
+      _tstDoc(
+        body: List<String>.generate(
+          20,
+          (index) => 'line ${index + 1} some english words here',
+        ).join('\n'),
+      ),
+    );
+
+    await tester.tap(
+      find.byKey(const ValueKey<String>('font-size-quick-adjust')),
+    );
+    await tester.pumpAndSettle();
+    final slider = tester.widget<Slider>(
+      find.byKey(const ValueKey<String>('quick-font-size-slider')),
+    );
+    slider.onChanged!(200);
+    await tester.pumpAndSettle();
+    await tester.tapAt(const Offset(400, 100));
+    await tester.pumpAndSettle();
+
+    final listFinder = find.byKey(const ValueKey<String>('single-column'));
+    expect(listFinder, findsOneWidget);
+
+    await tester.drag(listFinder, const Offset(0, -300));
+    await tester.pumpAndSettle();
+
+    final controller = tester.widget<ListView>(listFinder).controller;
+    expect(controller!.offset, greaterThan(0));
+  });
+
   testWidgets('空白文稿显示占位提示', (tester) async {
     await _pumpDisplay(tester, _tstDoc(body: ''));
 

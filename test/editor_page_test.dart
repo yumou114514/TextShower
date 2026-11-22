@@ -108,9 +108,47 @@ void main() {
 
     expect(find.byType(Slider), findsNothing);
     expect(find.text('32'), findsOneWidget);
+    expect(find.byTooltip('放大字号'), findsOneWidget);
+    expect(find.byTooltip('缩小字号'), findsOneWidget);
     expect(find.text('双指缩放或按住 Ctrl 滚动鼠标滚轮调整字号'), findsOneWidget);
     expect(find.text('隐藏'), findsNothing);
     expect(find.text('取消隐藏'), findsNothing);
+  });
+
+  testWidgets('加减按钮调整编辑字号', (tester) async {
+    final repository = MemoryDocRepository(<TextDoc>[_tstDoc()]);
+    await _pumpEditor(tester, repository, _tstDoc());
+
+    await tester.tap(find.byTooltip('放大字号'));
+    await tester.pumpAndSettle();
+    expect(find.text('34'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('缩小字号'));
+    await tester.pumpAndSettle();
+    expect(find.text('32'), findsOneWidget);
+  });
+
+  testWidgets('点击编辑字号数值用滑块快速调整', (tester) async {
+    final repository = MemoryDocRepository(<TextDoc>[_tstDoc()]);
+    await _pumpEditor(tester, repository, _tstDoc());
+
+    await tester.tap(
+      find.byKey(const ValueKey<String>('editor-font-size-quick-adjust')),
+    );
+    await tester.pumpAndSettle();
+
+    final slider = tester.widget<Slider>(
+      find.byKey(const ValueKey<String>('quick-font-size-slider')),
+    );
+    slider.onChanged!(80);
+    await tester.pumpAndSettle();
+
+    final text = tester
+        .widget<Text>(
+          find.byKey(const ValueKey<String>('editor-font-size-value')),
+        )
+        .data;
+    expect(text, '80');
   });
 
   testWidgets('Ctrl+滚轮调整字号', (tester) async {

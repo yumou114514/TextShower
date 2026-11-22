@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'data/doc_repository.dart';
 import 'data/file_pick_service.dart';
+import 'data/windows_soft_keyboard.dart';
 import 'models/text_doc.dart';
 import 'pages/library_page.dart';
 
@@ -19,19 +20,24 @@ class TextShowerApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'TextShower',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF4C5BD4),
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (event) =>
+          WindowsSoftKeyboard.notePointerDevice(event.kind),
+      child: MaterialApp(
+        title: 'TextShower',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          useMaterial3: true,
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color(0xFF4C5BD4),
+          ),
         ),
-      ),
-      home: LibraryPage(
-        repository: repository,
-        initialDoc: initialDoc,
-        filePicker: filePicker,
+        home: LibraryPage(
+          repository: repository,
+          initialDoc: initialDoc,
+          filePicker: filePicker,
+        ),
       ),
     );
   }

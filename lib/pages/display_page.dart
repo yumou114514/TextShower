@@ -43,6 +43,11 @@ class _DisplayPageState extends State<DisplayPage> {
   double _displayFontSize = 32;
   bool _refreshScheduled = false;
 
+  final Map<int, Offset> _pointers = <int, Offset>{};
+  double? _pinchStartDistance;
+  double _pinchStartFontSize = 32;
+  bool _scrollFrozen = false;
+
   @override
   void initState() {
     super.initState();
@@ -114,6 +119,46 @@ class _DisplayPageState extends State<DisplayPage> {
     });
   }
 
+  double get _effectiveFontSize =>
+      _pref.auto ? _displayFontSize : _pref.manualSize;
+
+  void _setManualFontSize(double value) {
+    final next = value.clamp(8.0, 200.0);
+    if (!_pref.auto && (next - _pref.manualSize).abs() < 0.01) return;
+    setState(() {
+      _pref = _pref.copyWith(auto: false, manualSize: next);
+    });
+  }
+
+  void _onPointerDown(PointerDownEvent event) {
+    _pointers[event.pointer] = event.position;
+    if (_pointers.length == 2) {
+      final positions = _pointers.values.toList();
+      _pinchStartDistance = (positions[0] - positions[1]).distance;
+      _pinchStartFontSize = _effectiveFontSize;
+      // 双指期间冻结列表拖动，避免捏合手势把页面一起滚走。
+      if (!_scrollFrozen) setState(() => _scrollFrozen = true);
+    }
+  }
+
+  void _onPointerMove(PointerMoveEvent event) {
+    if (!_pointers.containsKey(event.pointer)) return;
+    _pointers[event.pointer] = event.position;
+    final start = _pinchStartDistance;
+    if (start == null || start <= 0 || _pointers.length < 2) return;
+    final positions = _pointers.values.toList();
+    final distance = (positions[0] - positions[1]).distance;
+    _setManualFontSize(_pinchStartFontSize * distance / start);
+  }
+
+  void _onPointerEnd(PointerEvent event) {
+    _pointers.remove(event.pointer);
+    if (_pointers.length < 2) {
+      _pinchStartDistance = null;
+      if (_scrollFrozen) setState(() => _scrollFrozen = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -152,9 +197,17 @@ class _DisplayPageState extends State<DisplayPage> {
       body: Column(
         children: [
           Expanded(
-            child: LayoutBuilder(
-              key: const ValueKey<String>('content-area'),
-              builder: (context, constraints) => _buildContent(constraints),
+            child: Listener(
+              key: const ValueKey<String>('display-gesture-area'),
+              behavior: HitTestBehavior.opaque,
+              onPointerDown: _onPointerDown,
+              onPointerMove: _onPointerMove,
+              onPointerUp: _onPointerEnd,
+              onPointerCancel: _onPointerEnd,
+              child: LayoutBuilder(
+                key: const ValueKey<String>('content-area'),
+                builder: (context, constraints) => _buildContent(constraints),
+              ),
             ),
           ),
           _buildToolbar(),
@@ -233,6 +286,9 @@ class _DisplayPageState extends State<DisplayPage> {
     return ListView.builder(
       key: const ValueKey<String>('single-column'),
       controller: _scrollController,
+      physics: _scrollFrozen
+          ? const NeverScrollableScrollPhysics()
+          : const ClampingScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: _hPad, vertical: _vPad),
       itemCount: blocks.length,
       itemBuilder: (context, index) => RichBlockText(

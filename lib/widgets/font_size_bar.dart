@@ -1,5 +1,76 @@
 import 'package:flutter/material.dart';
 
+Future<void> showQuickFontSizeSheet(
+  BuildContext context, {
+  required double value,
+  required ValueChanged<double> onChanged,
+  double min = 8,
+  double max = 200,
+}) {
+  var current = value.clamp(min, max);
+  return showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    builder: (sheetContext) => StatefulBuilder(
+      builder: (context, setSheetState) {
+        final scheme = Theme.of(context).colorScheme;
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      '快速调整字号',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const Spacer(),
+                    Text(
+                      '${current.round()}',
+                      key: const ValueKey<String>('quick-font-size-value'),
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: scheme.onSurface,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ],
+                ),
+                Slider(
+                  key: const ValueKey<String>('quick-font-size-slider'),
+                  value: current,
+                  min: min,
+                  max: max,
+                  onChanged: (next) {
+                    setSheetState(() => current = next);
+                    onChanged(next);
+                  },
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '${min.round()}',
+                      style: TextStyle(fontSize: 12, color: scheme.outline),
+                    ),
+                    Text(
+                      '${max.round()}',
+                      style: TextStyle(fontSize: 12, color: scheme.outline),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    ),
+  );
+}
+
 class FontSizeBar extends StatelessWidget {
   const FontSizeBar({
     super.key,
@@ -37,14 +108,28 @@ class FontSizeBar extends StatelessWidget {
           icon: const Icon(Icons.remove),
         ),
         SizedBox(
-          width: 40,
-          child: Text(
-            '${clamped.round()}',
-            key: const ValueKey<String>('font-size-value'),
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: scheme.onSurface,
-              fontFeatures: const [FontFeature.tabularFigures()],
+          width: 48,
+          height: 48,
+          child: InkWell(
+            key: const ValueKey<String>('font-size-quick-adjust'),
+            borderRadius: BorderRadius.circular(8),
+            onTap: () => showQuickFontSizeSheet(
+              context,
+              value: clamped,
+              onChanged: onChanged,
+              min: min,
+              max: max,
+            ),
+            child: Center(
+              child: Text(
+                '${clamped.round()}',
+                key: const ValueKey<String>('font-size-value'),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: scheme.onSurface,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
             ),
           ),
         ),

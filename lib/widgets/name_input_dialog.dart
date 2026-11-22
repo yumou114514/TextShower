@@ -1,4 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+
+import '../data/windows_soft_keyboard.dart';
 
 class NameInputDialog extends StatefulWidget {
   const NameInputDialog({
@@ -23,12 +27,30 @@ class NameInputDialog extends StatefulWidget {
 class _NameInputDialogState extends State<NameInputDialog> {
   late final TextEditingController _controller =
       TextEditingController(text: widget.initial);
+  final FocusNode _focusNode = FocusNode();
   String? _error;
 
   @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(_onFocusChanged);
+  }
+
+  @override
   void dispose() {
+    _focusNode.removeListener(_onFocusChanged);
+    _focusNode.dispose();
+    WindowsSoftKeyboard.scheduleHide();
     _controller.dispose();
     super.dispose();
+  }
+
+  void _onFocusChanged() {
+    if (_focusNode.hasFocus) {
+      unawaited(WindowsSoftKeyboard.showForTouchInput());
+    } else {
+      WindowsSoftKeyboard.scheduleHide();
+    }
   }
 
   void _submit() {
@@ -47,6 +69,7 @@ class _NameInputDialogState extends State<NameInputDialog> {
       title: Text(widget.title),
       content: TextField(
         controller: _controller,
+        focusNode: _focusNode,
         autofocus: true,
         decoration: InputDecoration(labelText: widget.label, errorText: _error),
         onSubmitted: (_) => _submit(),

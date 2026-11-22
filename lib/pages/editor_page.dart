@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/gestures.dart';
@@ -8,7 +9,9 @@ import '../data/doc_repository.dart';
 import '../data/export_service.dart';
 import '../data/file_pick_service.dart';
 import '../data/tst_codec.dart';
+import '../data/windows_soft_keyboard.dart';
 import '../models/text_doc.dart';
+import '../widgets/font_size_bar.dart';
 import '../widgets/name_input_dialog.dart';
 
 class EditorResult {
@@ -65,6 +68,7 @@ class _EditorPageState extends State<EditorPage> {
     _bodyController = TextEditingController(text: widget.doc.body);
     _titleController = TextEditingController(text: widget.doc.title);
     _focusNode = FocusNode();
+    _focusNode.addListener(_onFocusChanged);
     _fontSize = widget.initialFontSize ?? 32;
     _bodyController.addListener(_onBodyChanged);
     _titleController.addListener(_onTitleChanged);
@@ -76,8 +80,18 @@ class _EditorPageState extends State<EditorPage> {
     _titleController.removeListener(_onTitleChanged);
     _bodyController.dispose();
     _titleController.dispose();
+    _focusNode.removeListener(_onFocusChanged);
     _focusNode.dispose();
+    unawaited(WindowsSoftKeyboard.hideNow());
     super.dispose();
+  }
+
+  void _onFocusChanged() {
+    if (_focusNode.hasFocus) {
+      unawaited(WindowsSoftKeyboard.showForTouchInput());
+    } else {
+      WindowsSoftKeyboard.scheduleHide();
+    }
   }
 
   void _setFontSize(double value) {
@@ -456,17 +470,50 @@ class _EditorPageState extends State<EditorPage> {
                   ),
                   const Spacer(),
                   const Icon(
-                    Icons.zoom_in,
+                    Icons.format_size,
                     size: 18,
                     color: Colors.black54,
                   ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${_fontSize.round()}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.black87,
+                  IconButton(
+                    tooltip: '缩小字号',
+                    visualDensity: VisualDensity.compact,
+                    onPressed: _fontSize <= 8
+                        ? null
+                        : () => _setFontSize(_fontSize - 2),
+                    icon: const Icon(Icons.remove, size: 20),
+                  ),
+                  SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: InkWell(
+                      key: const ValueKey<String>('editor-font-size-quick-adjust'),
+                      borderRadius: BorderRadius.circular(8),
+                      onTap: () => showQuickFontSizeSheet(
+                        context,
+                        value: _fontSize,
+                        onChanged: _setFontSize,
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${_fontSize.round()}',
+                          key: const ValueKey<String>('editor-font-size-value'),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.black87,
+                            fontFeatures: [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                      ),
                     ),
+                  ),
+                  IconButton(
+                    tooltip: '放大字号',
+                    visualDensity: VisualDensity.compact,
+                    onPressed: _fontSize >= 200
+                        ? null
+                        : () => _setFontSize(_fontSize + 2),
+                    icon: const Icon(Icons.add, size: 20),
                   ),
                 ],
               ),
